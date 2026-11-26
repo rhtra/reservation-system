@@ -1,0 +1,13 @@
+import express from 'express';
+import cors from 'cors';
+import { z } from 'zod';
+const app=express(); app.use(cors()); app.use(express.json());
+const courts=[{id:'court-1',name:'Court 1',type:'indoor',hourlyRate:450,active:true},{id:'court-2',name:'Court 2',type:'indoor',hourlyRate:350,active:true},{id:'court-3',name:'Court 3',type:'outdoor',hourlyRate:250,active:true},{id:'court-4',name:'Court 4',type:'outdoor',hourlyRate:250,active:true}];
+const reservations:Array<{id:string;playerName:string;email:string;courtId:string;startAt:string;durationMinutes:number;status:string}>=[];
+app.get('/health',(_req,res)=>res.json({status:'ok'}));
+app.get('/api/courts',(_req,res)=>res.json(courts.filter(c=>c.active)));
+app.get('/api/reservations',(_req,res)=>res.json(reservations));
+const createSchema=z.object({playerName:z.string().min(2),email:z.string().email(),courtId:z.string(),startAt:z.string().datetime(),durationMinutes:z.number().int().min(60).max(120)});
+app.post('/api/reservations',(req,res)=>{const parsed=createSchema.safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'Invalid reservation details',details:parsed.error.flatten()});const input=parsed.data;if(!courts.some(c=>c.id===input.courtId&&c.active))return res.status(404).json({error:'Court not found'});const start=new Date(input.startAt).getTime(),end=start+input.durationMinutes*60000;const conflict=reservations.some(r=>{if(r.courtId!==input.courtId||r.status==='cancelled')return false;const s=new Date(r.startAt).getTime(),e=s+r.durationMinutes*60000;return start<e&&end>s;});if(conflict)return res.status(409).json({error:'That court is already reserved for the selected time'});const reservation={id:`PB-${Date.now()}`,...input,status:'confirmed'};reservations.push(reservation);return res.status(201).json(reservation);});
+app.patch('/api/reservations/:id/cancel',(req,res)=>{const item=reservations.find(r=>r.id===req.params.id);if(!item)return res.status(404).json({error:'Reservation not found'});item.status='cancelled';return res.json(item);});
+const port=Number(process.env.PORT||4000);app.listen(port,()=>console.log(`Pickleball API listening on http://localhost:${port}`));

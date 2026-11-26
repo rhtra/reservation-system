@@ -1,0 +1,15 @@
+{
+  "name": "pickleball-reservation-microfrontends",
+  "private": true,
+  "workspaces": ["host", "booking", "courts", "admin", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:host\" \"npm run dev:booking\" \"npm run dev:courts\" \"npm run dev:admin\" \"npm run dev:server\"",
+    "dev:host": "npm run start --workspace host",
+    "dev:booking": "npm run start --workspace booking",
+    "dev:courts": "npm run start --workspace courts",
+    "dev:admin": "npm run start --workspace admin",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace host && npm run build --workspace booking && npm run build --workspace courts && npm run build --workspace admin"
+  },
+  "devDependencies": {"concurrently": "^9.1.2"}
+}
